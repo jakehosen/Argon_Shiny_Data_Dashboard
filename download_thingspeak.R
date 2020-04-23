@@ -13,6 +13,8 @@ library(ggplot2)
 library(reshape2)
 library(dplyr)
 
+library(bjzresc)
+
 theme_ts_space<-theme_grey() +
   theme(
     #		panel.grid.major = element_blank(),
@@ -58,16 +60,18 @@ for(i in 1:days){
   if(exists("morning")&exists("afternoon")){
   day<-bind_rows(as.data.frame(morning),as.data.frame(afternoon))}else{
     if(exists("morning")){
-      total<-as.data.frame(morning)
-    }else{if(exists("afternoon")){total<-as.data.frame(afternoon)}}
+      day<-as.data.frame(morning)
+    }else{if(exists("afternoon")){day<-as.data.frame(afternoon)}}
   }
-  if(!exists("total")){
+  if(!exists("total") & exists("day")){
     total<-day[0,]
   }
+  if(exists("day")){
   fieldnames<-data.frame(jsonRespParsed[[1]])
   #fieldnames[1,grep("field",names(fieldnames))]
   names(day)[grep("field",names(day))]<-as.character(unlist(fieldnames[1,grep("field",names(fieldnames))]))
   total<-bind_rows(total,day)
+  }
   }
 }
 if(exists("total")){
@@ -90,7 +94,7 @@ data_1036908<-ts_dl("2020-03-01",Sys.Date()+1,"1036908")
 data_1036910<-ts_dl("2020-03-01",Sys.Date()+1,"1036910")
 data_1036911<-ts_dl("2020-03-01",Sys.Date()+1,"1036911")
 
-airq_data<-bind_rows(data_1030130,data_1036916,data_1036925,data_1036891,data_1036907)
+airq_data<-bind_rows(data_1030130,data_1036916,data_1036917,data_1036924,data_1036874,data_1036907,data_1036925,data_1036891,data_1036907,data_1036908,data_1036910,data_1036911)
 names_no<-names(airq_data)[grep("field",names(airq_data))]
 airq_data<-airq_data[,!names(airq_data)%in%names_no]
 airq_data<-subset(airq_data,Temperature!="" & !is.na(Temperature))
@@ -101,6 +105,18 @@ airq_data<-airq_data[,!grepl("Aq Sensor Raw",names(airq_data),fixed=TRUE)]
 airq_data<-airq_data[,!grepl("Aq Sensor Slope",names(airq_data),fixed=TRUE)]
 
 saveRDS(airq_data,"/srv/shiny-server/Data_Dashboard/airq_data.rds")
+
+purpleair_sensorlist <- read.csv("testing.csv/sensorlist_2020-04-22.csv")
+#41.932732, -88.018712
+#42.047608, -84.510062
+#37.688329, -84.103645
+#37.388354, -88.589074
+pa_keepers<-subset(purpleair_sensorlist, Lat<42.0 & Lat>37.4 & Lon>-88.6 & Lon< -84)
+
+purpleairDownload(pa_keepers, "2019-03-01",Sys.Date()+1, output.path="/srv/shiny-server/Data_Dashboard/pa_data", average=15,
+                  time.zone = "GMT", indoor = T, n.thread = 2)
+
+
 
 range(airq_data$dt)
 
